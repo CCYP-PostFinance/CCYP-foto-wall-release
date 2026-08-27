@@ -1,0 +1,25 @@
+metadata_dir = "/var/lib/garage/meta"
+data_dir = "/var/lib/garage/data"
+db_engine = "sqlite"
+metadata_auto_snapshot_interval = "6h"
+
+replication_factor = 1
+compression_level = 2
+
+rpc_bind_addr = "0.0.0.0:3901"
+rpc_public_addr = "127.0.0.1:3901" # Required
+
+[s3_api]
+s3_region = "eu-central-1"
+api_bind_addr = "0.0.0.0:3900"
+root_domain = ".s3.eu-central-1.localhost"
+
+[s3_web] # Optional, if you want to expose bucket as web
+bind_addr = "0.0.0.0:3902"
+root_domain = ".web.eu-central-1.localhost"
+index = "index.html"
+
+[admin] # Required
+api_bind_addr = "0.0.0.0:3903"
+admin_token = "YOUR_ADMIN_TOKEN_HERE"
+metrics_token = "YOUR_METRICS_TOKEN_HERE"

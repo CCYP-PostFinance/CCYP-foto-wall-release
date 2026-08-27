@@ -1,0 +1,105 @@
+name: fotowall-prod
+services:
+  fotowall-db:
+    image: postgres:alpine
+    restart: unless-stopped
+    profiles: [ "dependencies", "runtime" ]
+    hostname: postgres
+    environment:
+      POSTGRES_USER: fotowall
+      POSTGRES_PASSWORD: fotowall12345
+      POSTGRES_DB: fotowalldb
+    volumes:
+      - fotowall-db:/data/postgres
+    ports:
+      - "5432:5432"
+
+  fotowall-s3-bucket:
+    image: dxflrs/garage:v2.3.0
+    container_name: fotowall-garage
+    restart: unless-stopped
+    profiles: [ "dependencies", "runtime" ]
+    hostname: s3bucket
+    env_file:
+      - docker.env
+    volumes:
+      - ./garage.toml:/etc/garage.toml
+      - fotowall_garage_meta:/var/lib/garage/meta
+      - fotowall_garage_data:/var/lib/garage/data
+    environment:
+      GARAGE_RPC_SECRET: '${GARAGE_RPC_SECRET}'
+    ports:
+      - "3900:3900" # S3 API
+      - "3901:3901" # RPC
+      - "3902:3902" # S3 Web (Fixed: was mapped to 3903)
+      - "3903:3903" # Admin API
+
+  fotowall-s3-webui:
+    image: khairul169/garage-webui:latest
+    container_name: fotowall-garage-webui
+    restart: unless-stopped
+    profiles: [ "dependencies", "runtime" ]
+    hostname: s3bucket-ui
+    env_file:
+      - docker.env
+    volumes:
+      - ./garage.toml:/etc/garage.toml:ro
+    ports:
+      - "3909:3909"
+    environment:
+      - API_BASE_URL=http://fotowall-s3-bucket:3903
+      - S3_ENDPOINT_URL=http://fotowall-s3-bucket:3900
+      - ADMIN_TOKEN=YOUR_ADMIN_TOKEN_HERE
+      - NO_PROXY=localhost,127.0.0.1,local,pnet.ch,host.docker.internal,garage
+      - no_proxy=localhost,127.0.0.1,local,pnet.ch,host.docker.internal,garage
+      - HTTP_PROXY=
+      - HTTPS_PROXY=
+      - http_proxy=
+      - https_proxy=
+    depends_on:
+      - fotowall-s3-bucket
+
+  fotowall-backend:
+    image: ghcr.io/ccyp-postfinance/ccyp-foto-wall-backend:latest
+    container_name: fotowall-backend
+    restart: unless-stopped
+    profiles: [ "runtime" ]
+    hostname: backend
+    links:
+      - fotowall-db
+      - fotowall-s3-bucket
+    env_file:
+      - spring.env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: fotowalldb
+      DB_USER: fotowall
+      DB_PASSWORD: fotowall12345
+    depends_on:
+      - fotowall-db
+      - fotowall-s3-bucket
+    ports:
+      - "8080:8080"
+
+  fotowall-frontend:
+    image: ghcr.io/ccyp-postfinance/ccyp-foto-wall-frontend:latest
+    container_name: fotowall-frontend
+    restart: unless-stopped
+    profiles: [ "runtime" ]
+    hostname: frontend
+    links:
+      - fotowall-backend
+      - fotowall-s3-bucket
+    environment:
+      - BACKEND_URL=backend:8080
+    depends_on:
+      - fotowall-backend
+    ports:
+      - "443:80"
+
+volumes:
+  fotowall_garage_meta:
+  fotowall_garage_data:
+  fotowall-db:
+    external: false
