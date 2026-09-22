@@ -1,15 +1,30 @@
+print "Downloading required files"
+
+curl -fsSL https://raw.githubusercontent.com/CCYP-PostFinance/CCYP-foto-wall-release/refs/heads/main/docker-compose.yaml  -o docker-compose.yaml
+curl -fsSL https://raw.githubusercontent.com/CCYP-PostFinance/CCYP-foto-wall-release/refs/heads/main/garage.toml  -o garage.toml
+
+print "Downloading completed"
+
+sleep 2
+
+print "Setting up environment for Garage"
 printf 'GARAGE_RPC_SECRET=%s\n' "$(openssl rand -hex 32)" > docker.env
 
 docker compose --profile dependencies --env-file ./docker.env up -d
 
 sleep 5
 
+print "Garage setup completed"
+
+sleep 2
+
+print "Launching S3 and Database"
+
 NODE_ID=$(docker exec fotowall-garage /garage status | grep -E '^[0-9a-f]{16}' | awk '{print $1}' | head -n 1)
 
 docker exec fotowall-garage /garage layout assign "$NODE_ID" -z dc1 -c 10G
 
 docker exec fotowall-garage /garage layout apply --version 1
-
 
 RESPONSE=$(curl -s -X POST -d '{"name":"backend"}' http://localhost:3909/api/v2/CreateKey)
 
@@ -32,5 +47,11 @@ printf '%s\n' \
   > spring.env
 
 sleep 10
+
+print "Database and S3 is Ready"
+
+sleep 2
+
+print "Launching Fotowall"
 
 docker compose --profile runtime --env-file ./docker.env --env-file ./spring.env up -d
