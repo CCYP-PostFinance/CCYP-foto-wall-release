@@ -1,9 +1,9 @@
 # Fotowall setup Guide
 
-Pre requirements to run the Fotowall:
-
-* Docker installed on the device
-* Loged in with a github account that is permitted to pull the docker images form those 2 registries: <br />
+> [!WARNING]
+> Pre requirements to run the Fotowall:
+> * Docker installed on the device
+> * Loged in with a github account that is permitted to pull the docker images form those 2 registries: <br />
   ghcr.io/ccyp-postfinance/ccyp-foto-wall-backend <br />
   ghcr.io/ccyp-postfinance/ccyp-foto-wall-frontend
 
@@ -42,6 +42,7 @@ gh auth token | docker login ghcr.io -u (gh api user --jq .login) --password-std
 ```
 
 </details>
+<br />
 
 
 ## Installation and Setup:
